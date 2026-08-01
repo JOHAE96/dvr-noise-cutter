@@ -8,3 +8,19 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Video files
+*.mp4
+*.mkv
+*.avi
+*.AVI
+*.mov
+*.MOV
+*.wmv
+*.flv
+*.webm
+*.m4v
+*.mpg
+*.mpeg
+*.ts
+*.vob

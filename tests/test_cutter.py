@@ -49,6 +49,17 @@ def test_invert_segments_adjacent_noise_segments():
     assert keep[1].start_sec == pytest.approx(30.0)
 
 
+def test_invert_segments_min_keep_duration_drops_short_clip():
+    # keep interval [10, 12) is only 2s long; split's min_clip_duration_sec (e.g. 3.0)
+    # should drop it while the noise segments themselves remain valid.
+    keep = invert_segments(
+        [NoiseSegment(0.0, 10.0), NoiseSegment(12.0, 100.0)],
+        total_duration_sec=100.0,
+        min_keep_duration_sec=3.0,
+    )
+    assert keep == []
+
+
 def test_ffprobe_duration_parses_output():
     with patch("dvr_noise_cutter.cutter.subprocess.run") as mock_run:
         mock_run.return_value.returncode = 0

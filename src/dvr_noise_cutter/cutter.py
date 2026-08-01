@@ -174,3 +174,45 @@ def cut_noise_segments(
             shutil.copy(segment_paths[0], out_path)
         else:
             concat_segments(segment_paths, out_path)
+
+
+@dataclass
+class SplitClip:
+    path: Path
+    start_sec: float
+    end_sec: float
+
+    @property
+    def duration_sec(self) -> float:
+        return self.end_sec - self.start_sec
+
+
+def split_at_noise_segments(
+    src: Path,
+    noise_segments: list[NoiseSegment],
+    output_dir: Path,
+    stem: str,
+    min_clip_duration_sec: float = 3.0,
+    duration_tolerance_sec: float = 0.5,
+) -> list[SplitClip]:
+    """Extract each keep-interval (complement of noise_segments) as its own clip.
+
+    Unlike cut_noise_segments, does not concatenate — each keep interval becomes
+    output_dir/f"{stem}_part{i:03d}.mp4". min_clip_duration_sec is passed as
+    invert_segments' min_keep_duration_sec, so short fragments between two nearby
+    dropouts are dropped rather than becoming a near-empty clip.
+    """
+    total_duration = ffprobe_duration(src)
+    keep_segments = invert_segments(noise_segments, total_duration, min_keep_duration_sec=min_clip_duration_sec)
+    if not keep_segments:
+        raise ValueError("No clip of at least min_clip_duration_sec remained after removing noise segments.")
+
+    has_audio = has_audio_stream(src)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    clips: list[SplitClip] = []
+    for i, seg in enumerate(keep_segments, start=1):
+        clip_path = output_dir / f"{stem}_part{i:03d}.mp4"
+        extract_segment(src, seg.start_sec, seg.end_sec, clip_path, has_audio, duration_tolerance_sec)
+        clips.append(SplitClip(path=clip_path, start_sec=seg.start_sec, end_sec=seg.end_sec))
+    return clips
