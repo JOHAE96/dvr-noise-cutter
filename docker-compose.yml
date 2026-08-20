@@ -22,9 +22,9 @@ services:
     #   - "8080:80"
     labels:
       - "traefik.enable=true"
-      # Adjust host/entrypoint/certresolver to match your existing Traefik setup
+      # Adjust entrypoint/certresolver to match your existing Traefik setup
       # (copy from another service's labels on this VPS).
-      - "traefik.http.routers.dvr-cutter.rule=Host(`dvr-cutter.example.com`)"
+      - "traefik.http.routers.dvr-cutter.rule=Host(`dvr.johanneshaeuser.de`)"
       - "traefik.http.routers.dvr-cutter.entrypoints=websecure"
       - "traefik.http.routers.dvr-cutter.tls.certresolver=letsencrypt"
       - "traefik.http.routers.dvr-cutter.middlewares=dvr-cutter-auth"
