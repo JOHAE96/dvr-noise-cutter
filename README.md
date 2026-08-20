@@ -1,6 +1,6 @@
 # FPV DVR Noise Cutter
 
-A CLI tool that analyzes FPV analog-DVR recordings (mp4/mov) and automatically detects
+A CLI tool that analyzes FPV analog-DVR recordings (mp4/mov/avi) and automatically detects
 segments of pure signal noise ("static/snow" from video-feed dropout, no drone camera
 picture) — to list them as timestamps, cut them out, or split the recording into
 separate clips at the dropout boundaries (e.g. one clip per battery pack).
@@ -97,7 +97,7 @@ uv run dvr-noise-cutter batch analyze *.mp4 --output-dir results/ --json
 
 Runs `analyze`, `cut`, or `split` over multiple videos in one invocation. Accepts
 individual video files and/or directories (directories are scanned non-recursively for
-`.mp4`/`.mov` files). A failure on one file (corrupt/unreadable video, ffmpeg error)
+`.mp4`/`.mov`/`.avi` files). A failure on one file (corrupt/unreadable video, ffmpeg error)
 doesn't abort the run — it's reported as `error` in the summary table while the rest of
 the batch continues.
 
@@ -132,3 +132,8 @@ tests/
 ├── test_detector.py
 └── test_cutter.py
 ```
+
+## Ofen used by Johannes
+ ```sh
+ uv run dvr-noise-cutter batch split /Volumes/NO\ NAME/DCIM/100DSCIM/*.AVI --output-dir cleaned/
+ ```

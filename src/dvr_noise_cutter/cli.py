@@ -109,7 +109,7 @@ def _render_clips_table(rows: list[tuple[str, float, float]], console: Console, 
 
 @app.command()
 def analyze(
-    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file (mp4/mov)."),
+    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file."),
     threshold: float = typer.Option(0.5, help="Combined noise-score threshold in [0, 1]."),
     min_segment_duration: float = typer.Option(1.0, "--min-segment-duration", help="Minimum noise segment duration in seconds."),
     sample_rate: int = typer.Option(5, "--sample-rate", help="Analyze every Nth frame."),
@@ -131,7 +131,7 @@ def analyze(
 
 @app.command()
 def cut(
-    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file (mp4/mov)."),
+    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file."),
     output: Path = typer.Option(..., "--output", help="Path to write the cleaned video."),
     threshold: float = typer.Option(0.5, help="Combined noise-score threshold in [0, 1]."),
     min_segment_duration: float = typer.Option(1.0, "--min-segment-duration", help="Minimum noise segment duration in seconds."),
@@ -161,7 +161,7 @@ def cut(
 
 @app.command()
 def split(
-    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file (mp4/mov)."),
+    video: Path = typer.Argument(..., exists=True, readable=True, help="Path to the DVR video file."),
     output_dir: Path = typer.Option(..., "--output-dir", help="Directory to write split clips into."),
     threshold: float = typer.Option(0.5, help="Combined noise-score threshold in [0, 1]."),
     min_segment_duration: float = typer.Option(1.0, "--min-segment-duration", help="Minimum noise segment duration in seconds."),
@@ -198,13 +198,15 @@ class BatchOperation(str, Enum):
     split = "split"
 
 
+VIDEO_SUFFIXES = {".mp4", ".mov", ".avi", ".mkv", ".wmv", ".flv", ".webm", ".m4v", ".mpg", ".mpeg", ".ts", ".vob"}
+
+
 def _expand_video_paths(paths: list[Path]) -> list[Path]:
-    """Directories are expanded to their mp4/mov files (non-recursive); files pass through."""
-    suffixes = {".mp4", ".mov", ".MP4", ".MOV"}
+    """Directories are expanded to their video files (non-recursive); files pass through."""
     expanded: list[Path] = []
     for p in paths:
         if p.is_dir():
-            expanded.extend(sorted(f for f in p.iterdir() if f.suffix in suffixes))
+            expanded.extend(sorted(f for f in p.iterdir() if f.suffix.lower() in VIDEO_SUFFIXES))
         else:
             expanded.append(p)
     return expanded
@@ -213,7 +215,7 @@ def _expand_video_paths(paths: list[Path]) -> list[Path]:
 @app.command()
 def batch(
     operation: BatchOperation = typer.Argument(..., help="Operation to run on each video: analyze, cut, or split."),
-    videos: list[Path] = typer.Argument(..., exists=True, readable=True, help="Video files, or directories to scan for mp4/mov files."),
+    videos: list[Path] = typer.Argument(..., exists=True, readable=True, help="Video files, or directories to scan for video files."),
     output_dir: Path = typer.Option(..., "--output-dir", help="Directory to write outputs into (cleaned/split videos, JSON exports)."),
     threshold: float = typer.Option(0.5, help="Combined noise-score threshold in [0, 1]."),
     min_segment_duration: float = typer.Option(1.0, "--min-segment-duration", help="Minimum noise segment duration in seconds."),
@@ -223,7 +225,7 @@ def batch(
     preview: bool = typer.Option(False, "--preview", help="Save a debug plot per video."),
     json_export: bool = typer.Option(False, "--json", help="(analyze only) Also write a <name>.json per video into output-dir."),
 ) -> None:
-    """Run analyze/cut/split over multiple videos, or every mp4/mov file in given directories."""
+    """Run analyze/cut/split over multiple videos, or every video file in given directories."""
     console = Console()
     output_dir.mkdir(parents=True, exist_ok=True)
     video_paths = _expand_video_paths(videos)

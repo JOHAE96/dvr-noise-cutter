@@ -27,3 +27,8 @@ wheels/
 
 #macOS
 .DS_Store
+
+# Web backend local job data + secrets
+/data/
+.env
+docker-compose.override.yml

@@ -33,7 +33,7 @@ Pipeline: `detector.py` scores frames → `cli.py` orchestrates → `cutter.py` 
 
 - **`cli.py`** — Typer app wiring `analyze`/`cut`/`split`/`batch` to the above.
   - `_run_detection` is the shared helper all single-video commands call (avoid duplicating the `analyze_video_frames` + `segments_from_scores` pair). Progress reporting is driven by `analyze_video_frames`'s `on_frame_read` callback, not a separate pass over the video.
-  - `batch` is a dedicated command (not multi-file arguments on `analyze`/`cut`/`split`, which stay single-video) that dispatches per-video to the same underlying functions (`_run_detection`, `cut_noise_segments`, `split_at_noise_segments`) inside a per-video `try/except`. Catching broad `Exception` there is intentional, not sloppy: batch input is typically an entire SD-card dump where some files may be corrupt/unreadable, and resilience across that is the entire point of the command — one bad file must not abort the run. Directories passed as `videos` are expanded via `_expand_video_paths` (non-recursive `.mp4`/`.mov` scan).
+  - `batch` is a dedicated command (not multi-file arguments on `analyze`/`cut`/`split`, which stay single-video) that dispatches per-video to the same underlying functions (`_run_detection`, `cut_noise_segments`, `split_at_noise_segments`) inside a per-video `try/except`. Catching broad `Exception` there is intentional, not sloppy: batch input is typically an entire SD-card dump where some files may be corrupt/unreadable, and resilience across that is the entire point of the command — one bad file must not abort the run. Directories passed as `videos` are expanded via `_expand_video_paths` (non-recursive `.mp4`/`.mov`/`.avi` scan).
 
 ### Real vs. synthetic noise
 

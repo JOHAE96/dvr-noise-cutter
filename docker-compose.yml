@@ -1,0 +1,40 @@
+services:
+  backend:
+    build: .
+    environment:
+      DVR_JOBS_DIR: /data/jobs
+      JOB_TTL_HOURS: "24"
+    volumes:
+      - jobs_data:/data/jobs
+    restart: unless-stopped
+    # No `ports:` — reached only via the frontend container's nginx proxy.
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - traefik
+      - default
+    # Uncomment for local testing without Traefik (see plan's verification step 4):
+    # ports:
+    #   - "8080:80"
+    labels:
+      - "traefik.enable=true"
+      # Adjust host/entrypoint/certresolver to match your existing Traefik setup
+      # (copy from another service's labels on this VPS).
+      - "traefik.http.routers.dvr-cutter.rule=Host(`dvr-cutter.example.com`)"
+      - "traefik.http.routers.dvr-cutter.entrypoints=websecure"
+      - "traefik.http.routers.dvr-cutter.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dvr-cutter.middlewares=dvr-cutter-auth"
+      - "traefik.http.middlewares.dvr-cutter-auth.basicauth.users=${DVR_BASIC_AUTH_USERS:?set DVR_BASIC_AUTH_USERS in .env}"
+      - "traefik.http.services.dvr-cutter.loadbalancer.server.port=80"
+
+volumes:
+  jobs_data:
+
+networks:
+  traefik:
+    external: true
+    # Must match the network name your existing Traefik container is attached to.
