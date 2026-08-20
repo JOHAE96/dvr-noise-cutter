@@ -22,7 +22,7 @@ wheels/
 *.m4v
 *.mpg
 *.mpeg
-*.ts
+/*.ts
 *.vob
 
 #macOS
