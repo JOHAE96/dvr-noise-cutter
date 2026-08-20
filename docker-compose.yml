@@ -25,8 +25,8 @@ services:
       # Adjust entrypoint/certresolver to match your existing Traefik setup
       # (copy from another service's labels on this VPS).
       - "traefik.http.routers.dvr-cutter.rule=Host(`dvr.johanneshaeuser.de`)"
-      - "traefik.http.routers.dvr-cutter.entrypoints=websecure"
-      - "traefik.http.routers.dvr-cutter.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.dvr-cutter.entrypoints=https"
+      - "traefik.http.routers.dvr-cutter.tls.certresolver=myresolver"
       - "traefik.http.routers.dvr-cutter.middlewares=dvr-cutter-auth"
       - "traefik.http.middlewares.dvr-cutter-auth.basicauth.users=${DVR_BASIC_AUTH_USERS:?set DVR_BASIC_AUTH_USERS in .env}"
       - "traefik.http.services.dvr-cutter.loadbalancer.server.port=80"
