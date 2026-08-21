@@ -22,6 +22,10 @@ services:
     #   - "8080:80"
     labels:
       - "traefik.enable=true"
+      # Container is attached to two networks (webproxy + this project's default
+      # network); without this, Traefik's Docker provider can pick the wrong one
+      # and dial an IP it has no route to, causing 504 Gateway Timeout.
+      - "traefik.docker.network=webproxy"
       # Adjust entrypoint/certresolver to match your existing Traefik setup
       # (copy from another service's labels on this VPS).
       - "traefik.http.routers.dvr-cutter.rule=Host(`dvr.johanneshaeuser.de`)"
@@ -36,5 +40,6 @@ volumes:
 
 networks:
   traefik:
+    name: webproxy
     external: true
     # Must match the network name your existing Traefik container is attached to.
