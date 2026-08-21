@@ -1,6 +1,12 @@
 import type { JobParams, JobResponse } from "./types";
 
-export async function createJob(files: File[], params: JobParams): Promise<{ job_id: string }> {
+// fetch() has no upload-progress API, so this uses XMLHttpRequest instead —
+// the only way to get real byte-level progress for a large multipart upload.
+export function createJob(
+  files: File[],
+  params: JobParams,
+  onProgress?: (fraction: number) => void,
+): Promise<{ job_id: string }> {
   const form = new FormData();
   for (const file of files) {
     form.append("files", file);
@@ -12,11 +18,32 @@ export async function createJob(files: File[], params: JobParams): Promise<{ job
   form.append("min_clip_duration", String(params.min_clip_duration));
   form.append("preview", String(params.preview));
 
-  const res = await fetch("/api/jobs", { method: "POST", body: form });
-  if (!res.ok) {
-    throw new Error(`Upload fehlgeschlagen (${res.status}): ${await res.text()}`);
-  }
-  return res.json();
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/jobs");
+
+    xhr.upload.onprogress = (event) => {
+      if (onProgress && event.lengthComputable) {
+        onProgress(event.loaded / event.total);
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          resolve(JSON.parse(xhr.responseText));
+        } catch {
+          reject(new Error("Ungültige Antwort vom Server."));
+        }
+      } else {
+        reject(new Error(`Upload fehlgeschlagen (${xhr.status}): ${xhr.responseText}`));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Upload fehlgeschlagen: Netzwerkfehler."));
+
+    xhr.send(form);
+  });
 }
 
 export async function getJob(jobId: string): Promise<JobResponse> {

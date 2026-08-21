@@ -4,10 +4,11 @@ import type { JobParams, Operation } from "../types";
 interface UploadFormProps {
   onSubmit: (files: File[], params: JobParams) => void;
   submitting: boolean;
+  uploadProgress: number | null;
   error: string | null;
 }
 
-export function UploadForm({ onSubmit, submitting, error }: UploadFormProps) {
+export function UploadForm({ onSubmit, submitting, uploadProgress, error }: UploadFormProps) {
   const [files, setFiles] = useState<File[]>([]);
   const [operation, setOperation] = useState<Operation>("split");
   const [threshold, setThreshold] = useState(0.5);
@@ -115,6 +116,20 @@ export function UploadForm({ onSubmit, submitting, error }: UploadFormProps) {
       </details>
 
       {error && <p className="error-message">{error}</p>}
+
+      {submitting && (
+        <div className="progress-block">
+          <div className="progress-bar">
+            <div
+              className={`progress-fill${uploadProgress === null ? " indeterminate" : ""}`}
+              style={uploadProgress !== null ? { width: `${Math.round(uploadProgress * 100)}%` } : undefined}
+            />
+          </div>
+          <p className="progress-label">
+            {uploadProgress !== null ? `Wird hochgeladen — ${Math.round(uploadProgress * 100)}%` : "Wird hochgeladen…"}
+          </p>
+        </div>
+      )}
 
       <button type="submit" disabled={files.length === 0 || submitting}>
         {submitting ? "Wird hochgeladen…" : "Starten"}

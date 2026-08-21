@@ -195,6 +195,12 @@ button:disabled {
   border-radius: 6px;
 }
 
+.explanation-image {
+  width: 100%;
+  border-radius: 8px;
+  display: block;
+}
+
 .download-links ul {
   list-style: none;
   padding: 0;

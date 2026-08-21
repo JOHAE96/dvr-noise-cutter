@@ -10,19 +10,22 @@ const JOB_ID_KEY = "dvrCutterJobId";
 export default function App() {
   const [jobId, setJobId] = useState<string | null>(() => sessionStorage.getItem(JOB_ID_KEY));
   const [submitting, setSubmitting] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const handleSubmit = useCallback(async (files: File[], params: JobParams) => {
     setSubmitting(true);
     setSubmitError(null);
+    setUploadProgress(0);
     try {
-      const { job_id } = await createJob(files, params);
+      const { job_id } = await createJob(files, params, setUploadProgress);
       sessionStorage.setItem(JOB_ID_KEY, job_id);
       setJobId(job_id);
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
+      setUploadProgress(null);
     }
   }, []);
 
@@ -37,7 +40,15 @@ export default function App() {
       {jobId ? (
         <JobStatus jobId={jobId} onReset={handleReset} />
       ) : (
-        <UploadForm onSubmit={handleSubmit} submitting={submitting} error={submitError} />
+        <>
+          <img src="/explaination.jpeg" alt="Analog video noise segments get detected and cut out" className="explanation-image" />
+          <UploadForm
+            onSubmit={handleSubmit}
+            submitting={submitting}
+            uploadProgress={uploadProgress}
+            error={submitError}
+          />
+        </>
       )}
     </main>
   );

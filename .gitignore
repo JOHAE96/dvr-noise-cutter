@@ -22,7 +22,7 @@ wheels/
 *.m4v
 *.mpg
 *.mpeg
-/*.ts
+# *.ts # typescript files need to be tracked for the frontend
 *.vob
 
 #macOS
