@@ -1,9 +1,14 @@
 # FPV DVR Noise Cutter
 
-A CLI tool that analyzes FPV analog-DVR recordings (mp4/mov/avi) and automatically detects
-segments of pure signal noise ("static/snow" from video-feed dropout, no drone camera
-picture) — to list them as timestamps, cut them out, or split the recording into
+A tool that analyzes FPV analog-DVR recordings (mp4/mov/avi/mkv/...) and automatically
+detects segments of pure signal noise ("static/snow" from video-feed dropout, no drone
+camera picture) — to list them as timestamps, cut them out, or split the recording into
 separate clips at the dropout boundaries (e.g. one clip per battery pack).
+
+Two ways to use it:
+- **CLI** (`dvr-noise-cutter`) — scriptable, runs locally, see [Usage](#usage) below.
+- **Web UI** — upload a video (or a whole folder) in the browser, no terminal needed;
+  see [Web UI](#web-ui) below. Built on the exact same detection/cutting code as the CLI.
 
 ## How it works
 
@@ -111,6 +116,61 @@ the batch continues.
 | `--preview` | off | Save a debug plot of the score curve. |
 | `--min-clip-duration` | `3.0` | (`split`/`batch split`) Minimum duration for a resulting clip. |
 
+## Web UI
+
+A FastAPI backend (`src/dvr_noise_cutter/web/`) wraps the same `detector.py`/`cutter.py`
+functions the CLI uses, and a small React frontend (`frontend/`) gives friends a
+browser-based upload → progress → download flow, including batch (multi-file/folder
+upload → one zip). Deployed as two Docker containers; access control is left entirely to
+a reverse proxy in front (Traefik's `basicauth` middleware in this setup) rather than
+building auth into the app itself.
+
+### Local testing (no reverse proxy needed)
+
+`docker-compose.yml` expects an external Docker network (for Traefik) and doesn't publish
+a port directly — for local testing, create a placeholder network matching whatever
+`docker-compose.yml`'s `networks.traefik.name` is currently set to (`webproxy` by
+default) and add a `docker-compose.override.yml` (auto-loaded by `docker compose`,
+already gitignored) to publish a port:
+
+```bash
+docker network create webproxy   # match the name in docker-compose.yml if you changed it
+
+cat > docker-compose.override.yml <<'EOF'
+services:
+  frontend:
+    ports:
+      - "8080:80"
+EOF
+
+echo 'DVR_BASIC_AUTH_USERS=unused-locally' > .env   # required by compose, but nothing
+                                                     # enforces it without real Traefik
+
+docker compose up -d --build
+```
+
+Open `http://localhost:8080` — no login prompt locally, since Traefik isn't actually
+gating it. Rebuild after code changes with the same `docker compose up -d --build`.
+
+### VPS deployment (with Traefik)
+
+Requires an existing Traefik instance with a Docker network you can join and a
+certresolver already configured.
+
+1. `cp .env.example .env`, generate real basic-auth credentials:
+   `htpasswd -nB <username>`, then paste the `user:hash` result into `.env` —
+   **double every `$` to `$$`** (see the comments in `.env.example` for why; verify with
+   `docker compose config | grep basicauth` before deploying).
+2. In `docker-compose.yml`, adjust the `frontend` service's Traefik labels to match your
+   setup: the `networks.traefik.name` (your Traefik network), the `Host()` rule (your
+   domain), `entrypoints`, and `certresolver` — easiest by copying from another service's
+   labels on the same VPS.
+3. `docker compose up -d --build`.
+
+Uploaded videos and outputs live in the `jobs_data` Docker volume, auto-deleted after
+`JOB_TTL_HOURS` (default `24`, set in `docker-compose.yml`) of inactivity — there's no
+manual cleanup needed for normal use.
+
 ## Development
 
 ```bash
@@ -127,10 +187,13 @@ src/dvr_noise_cutter/
 ├── detector.py   # per-frame score functions, combination, temporal segmentation
 ├── cutter.py     # ffprobe/ffmpeg extraction, concatenation, and per-clip splitting
 ├── preview.py    # debug score-curve plot
-└── cli.py        # Typer CLI (analyze, cut, split, batch)
+├── cli.py        # Typer CLI (analyze, cut, split, batch)
+└── web/          # FastAPI backend for the browser UI (app.py, jobs.py, ttl.py, schemas.py)
+frontend/         # Vite + React + TypeScript UI, talks to web/ over HTTP
 tests/
 ├── test_detector.py
-└── test_cutter.py
+├── test_cutter.py
+└── test_ttl.py
 ```
 
 ## Ofen used by Johannes
